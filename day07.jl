@@ -1,12 +1,5 @@
-sample = split("""light red bags contain 1 bright white bag, 2 muted yellow bags.
-dark orange bags contain 3 bright white bags, 4 muted yellow bags.
-bright white bags contain 1 shiny gold bag.
-muted yellow bags contain 2 shiny gold bags, 9 faded blue bags.
-shiny gold bags contain 1 dark olive bag, 2 vibrant plum bags.
-dark olive bags contain 3 faded blue bags, 4 dotted black bags.
-vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
-faded blue bags contain no other bags.
-dotted black bags contain no other bags.""", "\n")
+filename() = "day07.txt"
+read_data() = split(String(read(filename())), "\n")
 
 # part 1
 
@@ -51,11 +44,10 @@ function part1(dct, target)
     return count(dfs(k) > 0 for k in keys(dct) if k != target)
 end
 
-sample_dict = build_bags_dict(sample)
-part1(sample_dict, "shiny gold")
-
-bags_dict = build_bags_dict(readlines("day07.txt"))
-part1(bags_dict, "shiny gold")
+function part1()
+    dct = build_bags_dict(read_data())
+    part1(dct, "shiny gold")
+end
 
 # part 2
 
@@ -64,11 +56,14 @@ function weight(dct, color)
     return helper(color) - 1  # exclude myself
 end
 
-weight(sample_dict, "shiny gold")
-weight(bags_dict, "shiny gold")
+function part2()
+    dct = build_bags_dict(read_data())
+    return weight(dct, "shiny gold")
+end
+
 
 #------------------------------------------
-# LightGraphs visualization
+# LightGraphs 
 
 using LightGraphs, SimpleWeightedGraphs
 
@@ -89,65 +84,30 @@ function build_digraph(lines)
     end
     return (; graph, rules)
 end
-sample_graph, sample_rules = build_digraph(sample)
+
+# e.g. part1_graph("shiny gold")
+function part1_graph(target)
+    graph, rules = build_digraph(readlines(filename()))
+    target_index = bag_index(rules, target)
+    return count([has_path(graph, i, target_index) for i in 1:nv(graph) if i !== target_index])
+end
+
+# --------------------------------------------------
+# Visualization
 
 using GraphPlot
-nodelabel = [bag_color(sample_rules, i) for i in 1:length(sample_rules)]
-gplot(sample_graph, nodelabel=nodelabel)
-
-# Let's try the real thing
-lines = readlines("day07.txt")
-graph, rules = build_digraph(lines)
-
 using Cairo, Compose, Colors
-nodelabel = [bag_color(rules, i) for i in 1:length(rules)]
-nodecolor = [bag_color(rules, i) == "shiny gold" ? colorant"firebrick1" : colorant"honeydew" for i in 1:length(rules)]
-gplot(graph, nodelabel=nodelabel)
 
-draw(PDF("day07.pdf", 100cm, 100cm), 
-    gplot(graph, nodelabel=nodelabel, nodefillc=nodecolor, arrowlengthfrac=0.01))
+function plot_pdf()
+    lines = readlines(filename())
+    graph, rules = build_digraph(lines)
 
+    nodelabel = [bag_color(rules, i) for i in 1:length(rules)]
+    nodecolor = [bag_color(rules, i) == "shiny gold" ? colorant"firebrick1" : colorant"honeydew" 
+        for i in 1:length(rules)]
 
-# From Jeffrey Lin on Slack
-#=
-struct Bag
-    color::String
-    quant::Int
+    draw(PDF("day07.pdf", 100cm, 100cm), 
+        gplot(graph, nodelabel=nodelabel, nodefillc=nodecolor, arrowlengthfrac=0.01))
+
+    return gplot(graph, nodelabel=nodelabel)
 end
-
-function parse_rules(filename)
-    rules = Dict{String, Vector{Bag}}()
-    for line in eachline(filename)
-        color, rest = split(line, " bags contain ")
-        rawrules = filter(!isnothing, match.(r"([0-9]) ([a-z]+ [a-z]+) bag", split(rest, ",")))
-        rules[color] = rawrules .|> x -> x.captures |> x -> Bag.(x[2], parse(Int, x[1]))
-    end
-    rules
-end
-
-
-function resolve(rules, color)
-    color == "shiny gold" || any(cc -> resolve(rules, cc.color), rules[color])
-end
-
-function solve_a(filename = save_input(2020, 7))
-    rules = parse_rules(filename)
-
-    count(keys(rules)) do color
-        color != "shiny gold" && resolve(rules, color)
-    end
-end
-
-function resolve2(rules, color)
-    if length(rules[color]) > 0
-        1 + sum(cc -> cc.quant * resolve2(rules, cc.color), rules[color])
-    else
-        1
-    end
-end
-
-function solve_b(filename = save_input(2020, 7))
-    rules = parse_rules(filename)
-    resolve2(rules, "shiny gold") - 1
-end
-=#

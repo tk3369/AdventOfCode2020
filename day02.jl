@@ -7,8 +7,10 @@ records = parse_line.(readlines("day02.txt"))
 
 using StatsBase
 
-# part1
+# Part1
+# Find number of valid passwords with at least and at most of a letter
 count(r -> r.min <= get(countmap(r.pwd), r.letter, -1) <= r.max, records)
 
-# part2
+# Part2
+# Find number of valid passwords with the letter at either min/max but not both
 count(r -> xor(r.pwd[r.min] == r.letter, r.pwd[r.max] == r.letter) , records)

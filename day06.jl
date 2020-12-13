@@ -1,12 +1,20 @@
+filename() = "day06.txt"
+
 # read data
-groups = split(String(read("day06.txt")), "\n\n")
+read_data() = split(String(read(filename())), "\n\n")
 
-# part 1
-count_unique(s) = length(unique(collect(replace(s, "\n"=>""))))
-count_unique.(groups) |> sum
+# Part 1
+function part1()
+    # how many unique poeple are in this set
+    count_unique(s) = length(unique(collect(replace(s, "\n"=>""))))
+    return count_unique.(read_data()) |> sum
+end
 
-# part 2
-function count_everyone(s) 
+# Part 2
+# Count everyone who answered 'yes', so we just need to take the intersection
+# of all people.
+function count_everyone(line) 
+    people = split(line, "\n")
     set = Set(collect('a':'z'))
     for p in people
         new_set = collect(p)
@@ -14,8 +22,9 @@ function count_everyone(s)
     end
     return length(set)
 end
-count_everyone.(groups) |> sum
 
-# part 2 (refactored)
-count_everyone(s) = length(intersect(collect.(split(s, "\n"))...))
-count_everyone.(groups) |> sum
+part2() = count_everyone.(read_data()) |> sum
+
+# part 2 (refactored using splatting)
+count_everyone_splat(s) = length(intersect(collect.(split(s, "\n"))...))
+part2b() = count_everyone_splat.(read_data()) |> sum

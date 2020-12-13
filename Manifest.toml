@@ -81,6 +81,12 @@ git-tree-sha1 = "8ad457cfeb0bca98732c97958ef81000a543e73e"
 uuid = "da1fd8a2-8d9e-5ec2-8556-3022fb5608a2"
 version = "1.0.5"
 
+[[ColorSchemes]]
+deps = ["ColorTypes", "Colors", "FixedPointNumbers", "Random", "StaticArrays"]
+git-tree-sha1 = "3141757b5832ee7a0386db87997ee5a23ff20f4d"
+uuid = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
+version = "3.10.2"
+
 [[ColorTypes]]
 deps = ["FixedPointNumbers", "Random"]
 git-tree-sha1 = "4bffea7ed1a9f0f3d1a131bbcd4b925548d75288"
@@ -288,9 +294,9 @@ version = "2.6.1+10"
 
 [[ICU_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "0ec2e6e6a049eb8520c19cd8976085afcf2943fb"
+git-tree-sha1 = "6ce9cf3c5490b045710d60ac3fd2fe48188846b3"
 uuid = "a51ab1cf-af8e-5615-a023-bc2c838bba6b"
-version = "67.1.0+2"
+version = "67.1.0+3"
 
 [[IdentityRanges]]
 deps = ["OffsetArrays"]
