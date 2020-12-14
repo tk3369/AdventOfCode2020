@@ -123,16 +123,16 @@ function part2()
 end
 
 # Visualization
-using Plots
+using Plots, Statistics
 
-function part2_animated(board_size = 261550)
+function part2_animated(board_size = 261550, max_value = 969683639)
     anim = Animation()
     marker_size = 2.0
     marker_alpha = 0.8
     marker_color = :green
     marker_shape = :rect
     scatter([1],[1], xlims = (1, board_size), ylims = (1, board_size),
-        markercolor = marker_color,
+        markercolor = :black,  # imaginary
         markersize = marker_size,
         markeralpha = marker_alpha,
         markershape = marker_shape,
@@ -146,6 +146,7 @@ function part2_animated(board_size = 261550)
     cnt = 0
     xs = Int[]
     ys = Int[]
+    vs = BigInt[]
     for instruction in program
         if instruction.command == :setmask
             setter = instruction.setter
@@ -158,6 +159,7 @@ function part2_animated(board_size = 261550)
                 x, y = addr ÷ board_size, addr % board_size
                 push!(xs, x)
                 push!(ys, y)
+                push!(vs, instruction.value)
             end
         end
         cnt += 1
@@ -174,13 +176,15 @@ function part2_animated(board_size = 261550)
             resize!(ys, 0)
         end
     end
-    scatter!(xs, ys, 
-        markercolor = marker_color,
-        markersize = marker_size,
-        markeralpha = marker_alpha,
-        markershape = marker_shape,
-        markerstrokewidth = 0,
-        title = "AoC Day 14 - Iteration $cnt")
+    if length(xs) > 0
+        scatter!(xs, ys,
+            markercolor = marker_color,
+            markersize = marker_size,
+            markeralpha = marker_alpha,
+            markershape = marker_shape,
+            markerstrokewidth = 0,
+            title = "AoC Day 14 - Iteration $cnt")
+    end
     frame(anim)
-    gif(anim, "day14_anim.gif", fps = 15)
+    gif(anim, "day14_anim.gif", fps = 13)
 end
