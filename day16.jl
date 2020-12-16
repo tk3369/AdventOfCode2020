@@ -23,6 +23,10 @@ function read_data()
     )
 end
 
+# ----------------------------------------------------------------------
+# Part 1
+# ----------------------------------------------------------------------
+
 """
 Returns `true` if the value does not appear in any of the rules
 """
@@ -62,7 +66,7 @@ end
 field_values(tickets, pos) = [t[pos] for t in tickets]
 
 "Return number of fields in the input."
-nfields(input) = length(input.my_ticket)
+field_count(input) = length(input.my_ticket)
 
 "Return all rules from the input as a flat array."
 all_rules(input) = collect(Iterators.flatten([r.ranges for r in input.rules]))
@@ -87,7 +91,7 @@ into a queue and revisit that later.
 function part2_search(input)
     tickets = good_nearby_tickets(input)
     found = Dict{Any,Int}()  # rule -> pos mapping
-    len = nfields(input)
+    len = field_count(input)
     queue = collect(1:len)
     cnt = 0
     while length(found) < len
@@ -109,6 +113,10 @@ function part2_search(input)
     return found
 end
 
+"""
+Find mapping of fields and rules. Then, look up my ticket and multiply
+the values for fields that start with the word `departure`.
+"""
 function part2()
     input = read_data()
     dct = part2_search(input)
