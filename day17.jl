@@ -74,3 +74,52 @@ end
 
 part1() = solve(3, 6)
 part2() = solve(4, 6)
+
+# Animation
+
+using Plots
+
+function animate(dims, iterations)
+    world = read_data(dims)
+    anim = Animation()
+    for i in 1:iterations
+
+        active_cubes = [k for (k,v) in world if v === true]
+        xs = getindex.(active_cubes, 1)
+        ys = getindex.(active_cubes, 2)
+        zs = getindex.(active_cubes, 3)
+        scatter(xs, ys, zs,
+            # xlims = (-6, 15), ylims = (-5, 13), zlims = (-8, 8),  # 6 cycles
+            xlims = (-30, 39), ylims = (-24, 36), zlims = (-32, 32),
+            markershape = :rect, markersize = 2, markerstrokewidth = 1, 
+            markerstrokealpha = 0.5, markeralpha = 0.6,
+            legend = nothing,
+            title = "Advent of Code Day 17 - Cycle $i")
+        frame(anim)
+
+        # Becuase all cubes changes state simultaneously, we must not
+        # mutate the current world. Make a copy of the world and mutate
+        # the new one only.
+        new_world = copy(world)
+        
+        # Find all ranges at all dimensions
+        spans = span.(Ref(world), 1:dims)
+
+        # Iterate all possible cubes within the world. This is actually
+        # very inefficient because all coordinates within the whole
+        # world are considered.
+        for cube in Iterators.product(spans...)
+            active = is_active(world, cube)
+            active_neighbors = count_active_neigbors(world, cube, dims)
+            if active && active_neighbors ∉ [2,3]
+                new_world[cube] = false
+            elseif !active && active_neighbors == 3
+                new_world[cube] = true
+            end
+        end
+
+        # Switch over to the new world after each iteration
+        world = new_world
+    end
+    gif(anim, "day17_anim.gif"; fps=3)
+end
