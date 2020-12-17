@@ -3,26 +3,26 @@ filename() = "day17.txt"
 function read_data(dims)
     data = readlines(filename())
     keytype = Tuple{fill(Int, dims)...}
-    padding = fill(0, dims-2)
-    dct = Dict{keytype,Bool}()
+    padding = fill(0, dims - 2)
+    world = Dict{keytype,Bool}()
     for r in 1:length(data)
         for c in 1:length(data[r])
-            dct[(r,c,padding...)] = data[r][c] == '#'
+            world[(r, c, padding...)] = data[r][c] == '#'
         end
     end
-    return dct
+    return world
 end
 
 """
 Count how many neighbors are active.
 """
 function count_active_neigbors(A, p, dims = 3)
-    rel = Iterators.product([[1,0,-1] for _ in 1:dims]...)
     cnt = 0
     origin = tuple(fill(0, dims)...)
+    rel = Iterators.product(fill([1,0,-1], dims)...)
     for r in rel
         if r != origin  # exclude myself
-            q = p .+ r
+            q = p .+ r  # neighbor coordinates
             if get(A, q, false)
                 cnt += 1
             end
