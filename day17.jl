@@ -79,6 +79,8 @@ part2() = solve(4, 6)
 
 using Plots
 
+# 3-D plot
+
 function animate(dims, iterations)
     world = read_data(dims)
     anim = Animation()
@@ -121,5 +123,73 @@ function animate(dims, iterations)
         # Switch over to the new world after each iteration
         world = new_world
     end
-    gif(anim, "day17_anim.gif"; fps=3)
+    gif(anim, "day17_anim_3d.gif"; fps=3)
+end
+
+# 4-D plot
+
+using ColorSchemes
+
+function getcolor(colors, v, maxvalue)
+    if v > 0
+        colors[v / maxvalue]
+    elseif v < 0
+        colors[1 - v / maxvalue]
+    else
+        colors[0.5]
+    end
+end
+
+function animate(dims, iterations, colors)
+    world = read_data(dims)
+    anim = Animation()
+    for i in 1:iterations
+
+        active_cubes = [k for (k,v) in world if v === true]
+        xs = getindex.(active_cubes, 1)
+        ys = getindex.(active_cubes, 2)
+        zs = getindex.(active_cubes, 3)
+        ws = getindex.(active_cubes, 4)
+        scatter(xs[1:1], ys[1:1], zs[1:1],
+            xlims = (-12, 30), ylims = (-10, 26), zlims = (-16, 16),  # 6 cycles
+            markershape = :rect, markersize = 2, markerstrokewidth = 1, 
+            markerstrokealpha = 0.5, markeralpha = 0.6,
+            markercolor = getcolor(colors, ws[1], iterations),
+            legend = nothing,
+            title = "Advent of Code Day 17 (4D) - Cycle $i")
+        for i in 2:length(xs)
+            color = ws[i]
+            scatter!(xs[i:i], ys[i:i], zs[i:i],
+                markershape = :rect, markersize = 2, markerstrokewidth = 1, 
+                markerstrokealpha = 0.5, markeralpha = 0.6,
+                markercolor = getcolor(colors, ws[i], iterations))
+        end
+        frame(anim)
+        @info "Finished iteration $i"
+
+        # Becuase all cubes changes state simultaneously, we must not
+        # mutate the current world. Make a copy of the world and mutate
+        # the new one only.
+        new_world = copy(world)
+        
+        # Find all ranges at all dimensions
+        spans = span.(Ref(world), 1:dims)
+
+        # Iterate all possible cubes within the world. This is actually
+        # very inefficient because all coordinates within the whole
+        # world are considered.
+        for cube in Iterators.product(spans...)
+            active = is_active(world, cube)
+            active_neighbors = count_active_neigbors(world, cube, dims)
+            if active && active_neighbors ∉ [2,3]
+                new_world[cube] = false
+            elseif !active && active_neighbors == 3
+                new_world[cube] = true
+            end
+        end
+
+        # Switch over to the new world after each iteration
+        world = new_world
+    end
+    gif(anim, "day17_anim_4d.gif"; fps=1)
 end
