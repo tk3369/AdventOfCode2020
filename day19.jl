@@ -74,7 +74,7 @@ end
 
 # For some reasons, regex recursion did not work: "((42)(?R)?(31))"
 function part2b()
-    rules, messages = read_data()
+    rules, messages = read_data(filename())
     rules["(8)"] = "((42)+)"
     rules["(11)"] = "((42)(?R)?(31))"
     re = make_regex(rules)
