@@ -68,16 +68,19 @@ function remaining_ingredients(foods, exclude_ingredients)
     return cnt
 end
 
+function resolve_allergens(foods)
+    work_list = create_work_list(foods)
+    return resolve(work_list)
+end
+
 function part1()
     foods = read_data()
-    work_list = create_work_list(foods)
-    mapped = resolve(work_list)
+    mapped = resolve_allergens(foods)
     return remaining_ingredients(foods, collect(values(mapped)))
 end
 
 function part2()
     foods = read_data()
-    work_list = create_work_list(foods)
-    mapped = resolve(work_list)
+    mapped = resolve_allergens(foods)
     return join([mapped[k] for k in sort(collect(keys(mapped)))], ",")
 end
