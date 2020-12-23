@@ -1,6 +1,6 @@
 using CircularList
 
-function play(L, n)
+function play!(L, n)
     
     highest = maximum(L)
     lowest = minimum(L)
@@ -76,7 +76,7 @@ end
 
 input() = [5,2,3,7,6,4,8,1,9]
 
-part1() = play(circularlist(input()), 100) |> part1_result
+part1() = play!(circularlist(input()), 100) |> part1_result
 
 function part2()
     n = 10_000_000
@@ -84,7 +84,7 @@ function part2()
     L = circularlist(vcat(input(), collect(10:1_000_000)))
     @info "Constructed list of $(length(L)) elements"
     
-    play(L, n)
+    play!(L, n)
     @info "Played $n times"
 
     forward!(L); v1 = current(L).data
