@@ -10,21 +10,8 @@ struct Point{T}
     z::T
 end
 
-# Greedy pattern matching
-function matchall(regex::Regex, s::AbstractString)
-    result = String[]
-    while true
-        m = match(regex, s)
-        m === nothing && break
-        matched_str = m.captures[1]
-        push!(result, matched_str)
-        s = s[length(codeunits(matched_str))+1:end]
-    end
-    return result
-end
-
 # Move a single step
-function step(p::Point, direction::String)
+function step(p::Point, direction::AbstractString)
     direction == "e"  && return Point(p.x+1, p.y-1, p.z)
     direction == "ne" && return Point(p.x+1, p.y, p.z-1)
     direction == "nw" && return Point(p.x, p.y+1, p.z-1)
@@ -36,7 +23,8 @@ end
 
 function read_data()
     regex = r"(e|se|sw|w|nw|ne)"
-    return matchall.(regex, readlines(filename()))
+    return [collect(m.match for m in eachmatch(regex, line)) 
+        for line in readlines(filename())]
 end
 
 # Flip a single tile
