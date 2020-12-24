@@ -28,7 +28,7 @@ function read_data()
 end
 
 # Flip a single tile
-function flip_tile!(tiles::Dict, point::Point)
+function flip_tile!(tiles::AbstractDict, point::Point)
     if haskey(tiles, point)
         tiles[point] = -tiles[point]   # flip
     else
@@ -39,27 +39,24 @@ end
 # Initialize the tiles by flipping certain ones to black
 function prepare_floor()
     instruction_set = read_data()
-    tiles = Dict()
+    tiles = Dict{Point{Int},Int}()
     for instructions in instruction_set
-        point = Point(0, 0, 0)
-        for instruction in instructions
-            point = step(point, instruction)
-        end
+        point = foldl(step, instructions; init = Point(0, 0, 0))
         flip_tile!(tiles, point)
     end
     return tiles
 end
 
-is_black(p::Point, tiles::Dict) = get(tiles, p, nothing) == 1
-is_white(p::Point, tiles::Dict) = !is_black(p, tiles)
+is_black(p::Point, tiles::AbstractDict) = get(tiles, p, nothing) == 1
+is_white(p::Point, tiles::AbstractDict) = !is_black(p, tiles)
 
 # Determine the size of the hex grid that needs to be examined
-function span(itr, field)
+function span(itr, field::Symbol)
     start, finish = extrema(getfield(p, field) for p in itr)
     return range(start - 1, finish + 1, step = 1)
 end
 
-function num_adjacent_black_tiles(p::Point, tiles::Dict)
+function num_adjacent_black_tiles(p::Point, tiles::AbstractDict)
     is_black(Point(p.x, p.y + 1, p.z - 1), tiles) +
     is_black(Point(p.x, p.y - 1, p.z + 1), tiles) +
     is_black(Point(p.x + 1, p.y - 1, p.z), tiles) +
@@ -68,9 +65,9 @@ function num_adjacent_black_tiles(p::Point, tiles::Dict)
     is_black(Point(p.x - 1, p.y, p.z + 1), tiles)
 end
 
-num_black_tiles(tiles::Dict) = count(==(1), values(tiles))
+num_black_tiles(tiles::AbstractDict) = count(==(1), values(tiles))
 
-function decorate!(tiles::Dict)
+function decorate!(tiles::AbstractDict)
     ks = keys(tiles)
     need_flip = Point[]
     for x in span(ks, :x), y in span(ks, :y), z in span(ks, :z)
