@@ -45,7 +45,7 @@ function prepare_floor()
     return tiles
 end
 
-is_black(p::Point, tiles::AbstractDict) = get(tiles, p, nothing) == 1
+is_black(p::Point, tiles::AbstractDict) = get(tiles, p, -1) == 1
 is_white(p::Point, tiles::AbstractDict) = !is_black(p, tiles)
 
 function neighbors(p::Point)
