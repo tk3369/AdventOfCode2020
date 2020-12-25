@@ -26,15 +26,24 @@ sides(t::Tile) = let len = length(t.data)
 end
 
 # n = 0, 1, 2, 3 (rotating left by 90 degrees)
-function hashes(t::Tile, n::Int)
-    top, bottom, left, right = sides(t)
-    if n == 0
+# Pass n as -1 to use the tile's own rotation setting
+function hashes(t::Tile, n::Int = -1, orientation::Symbol = :original)
+    the_tile = if orientation == :original
+        t
+    elseif orientation == :horizontal
+        hflip(t)
+    else
+        vflip(t)
+    end
+    top, bottom, left, right = sides(the_tile)
+    rotation = n >= 0 ? n : the_tile.rotation
+    if rotation == 0
         [hash(top), hash(bottom), hash(left), hash(right)]
-    elseif n == 1
+    elseif rotation == 1
         [hash(right), hash(left), hash(reverse(top)), hash(reverse(bottom))]
-    elseif n == 2
+    elseif rotation == 2
         [hash(reverse(bottom)), hash(reverse(top)), hash(reverse(right)), hash(reverse(left))]
-    elseif n == 3
+    elseif rotation == 3
         [hash(reverse(left)), hash(reverse(right)), hash(bottom), hash(top)]
     else
         error("Incorrect usage")
@@ -44,7 +53,8 @@ end
 # Flip vertically
 vflip(t::Tile) = Tile(
     t.id,
-    vcat(t.data[end], t.data[2:end-1], t.data[1]),
+    # vcat(t.data[end], t.data[2:end-1], t.data[1]),
+    t.data[end:-1:1],
     :vertical,
     t.rotation
 )
@@ -52,7 +62,8 @@ vflip(t::Tile) = Tile(
 # Flip horizontally
 hflip(t::Tile) = Tile(
     t.id,
-    [join(vcat(r[end], r[2:end], r[1])) for r in t.data],
+    # [join(vcat(r[end], r[2:end], r[1])) for r in t.data],
+    [reverse(r) for r in t.data],
     :horizontal,
     t.rotation
 )
@@ -90,24 +101,30 @@ end
 # Given a tile `x`, align tile `y` by rotating/flipping `y`.
 # Only need to align a single side, either :top or :left (of `y`)
 # Return a new tile object transformed from `y`.
-function align(x::Tile, y::Tile, side::Symbol)
+# The original tiles is updated to the new orientitation.
+function align!(tiles::Dict, x::Tile, y::Tile, side::Symbol)
     if side == :top
-        x_bottom_hash = hashes(x, 0)[2]
-        for y in [y, hflip(y), vflip(y)]
+        x_bottom_hash = hashes(x, x.rotation, x.orientation)[2]
+        # x.id == 2213 && @info "x (2213)" x hashes(x)
+        for (orientation, this_y) in zip([:original, :horizontal, :vertical], [y, hflip(y), vflip(y)])
             for i in 0:3
-                csh = hashes(y, i)[1]  # top hash
+                csh = hashes(this_y, i)[1]  # top hash
+                # x.id == 2213 && @info "this_y ($(y.id))" hashes(this_y, i)
                 if csh == x_bottom_hash
-                    return Tile(y.id, y.data, y.orientation, i)
+                    tiles[y.id] = Tile(y.id, y.data, orientation, i)
+                    return tiles[y.id] 
                 end
             end
         end
     elseif side == :left
-        x_right_hash = hashes(x, 0)[4]
-        for y in [y, hflip(y), vflip(y)]
+        x_right_hash = hashes(x, x.rotation, x.orientation)[4]
+        # x.id == 1021 && @info "x (1021)" x hashes(x)
+        for (orientation, this_y) in zip([:original, :horizontal, :vertical], [y, hflip(y), vflip(y)])
             for i in 0:3
-                csh = hashes(y, i)[3]  # left hash
+                csh = hashes(this_y, i)[3]  # left hash
                 if csh == x_right_hash
-                    return Tile(y.id, y.data, y.orientation, i)
+                    tiles[y.id] = Tile(y.id, y.data, orientation, i)
+                    return tiles[y.id] 
                 end
             end
         end
@@ -117,6 +134,17 @@ function align(x::Tile, y::Tile, side::Symbol)
 end
 
 function assemble(tiles::Dict, mappings::Dict)
+    corners = [k for (k,v) in mappings if length(v) == 2]
+    for c in corners
+        image, picture, tiles = try_assemble(tiles, mappings, c)
+        if count(isnothing, picture) == 0
+            return image, picture, tiles
+        end
+    end
+    error("Too bad, cannot assemble the puzzle")
+end
+
+function try_assemble(tiles::Dict, mappings::Dict, corner::Int)
     # create an image array
     sz = round(Int, sqrt(length(tiles)))
     image = fill(0, (sz, sz))
@@ -124,17 +152,15 @@ function assemble(tiles::Dict, mappings::Dict)
     # aligned tiles
     picture = Any[nothing for i in 1:sz, j in 1:sz]
 
-    # pick a random corner and bootstrap the process
-    corner = [k for (k,v) in mappings if length(v) == 2][1]
     neighbors = [v for v in mappings[corner]]
 
-    @show image[1,1] = corner 
-    @show image[2,1] = neighbors[1]
-    @show image[1,2] = neighbors[2]
+    image[1,1] = corner 
+    image[2,1] = neighbors[1]
+    image[1,2] = neighbors[2]
 
     picture[1,1] = tiles[corner]
-    picture[2,1] = align(tiles[corner], tiles[neighbors[1]], :top)
-    picture[1,2] = align(tiles[corner], tiles[neighbors[2]], :left)
+    picture[2,1] = align!(tiles, tiles[corner], tiles[neighbors[1]], :top)
+    picture[1,2] = align!(tiles, tiles[corner], tiles[neighbors[2]], :left)
 
     # use a Set to remember which tile has already been placed
     visited = union(corner, mappings[corner])
@@ -157,7 +183,7 @@ function assemble(tiles::Dict, mappings::Dict)
             common_tile_id = pop!(common_tile)
             image[pos[1], pos[2]] = common_tile_id
             push!(visited, common_tile_id)
-            picture[pos[1], pos[2]] = align(tiles[left_tile], tiles[common_tile_id], :left)
+            picture[pos[1], pos[2]] = align!(tiles, tiles[left_tile], tiles[common_tile_id], :left)
             # println("Found tile at row=$row i=$i pos=$pos => $common_tile_id")
         end
         # place tile at (row, 1). It has to be the only unvisited top neighbor's neighbors 
@@ -169,7 +195,7 @@ function assemble(tiles::Dict, mappings::Dict)
             me_id = pop!(me)
             image[row, 1] = me_id
             push!(visited, me_id)
-            picture[row, 1] = align(tiles[top_id], tiles[me_id], :top)
+            picture[row, 1] = align!(tiles, tiles[top_id], tiles[me_id], :top)
             # println("Found left edge tile ($(row), 1)=> $me_id")
         end
         # place tile at (1, row)
@@ -181,11 +207,11 @@ function assemble(tiles::Dict, mappings::Dict)
             me_id = pop!(me)
             image[1, row] = me_id
             push!(visited, me_id)
-            picture[1, row] = align(tiles[left_id], tiles[me_id], :left)
+            picture[1, row] = align!(tiles, tiles[left_id], tiles[me_id], :left)
             # println("Found top edge tile (1, $(row)) => $me_id")
         end
     end
-    image, picture
+    image, picture, tiles
 end
 
 function as_matrix(t::Tile)
@@ -222,8 +248,56 @@ function final_matrix(t::Tile)
     return A
 end
 
+remove_border(A::AbstractMatrix) = A[2:end-1,2:end-1]
+
 function make_bitmap(picture)
-    final_matrix.(picture)
+    M = remove_border.(final_matrix.(picture))
+    return vcat([hcat(M[r, :]...) for r in 1:size(picture,1)]...)
+end
+
+function get_stencil()
+    str =   """
+                  # 
+#    ##    ##    ###
+ #  #  #  #  #  #   """
+    parse_line(s) = [c == ' ' ? 0 : 1 for c in s]
+    vcat(map(transpose, parse_line.(split(str, "\n")))...)
+end
+
+function is_monster(stencil, A, row, col)
+    r, c = size(stencil)
+    area = A[row:row+r-1, col:col+c-1]
+    masked_area = stencil .& area
+    return sum(masked_area) == sum(stencil)
+end
+
+function find_monsters(stencil, bitmap)
+    br, bc = size(bitmap)
+    sr, sc = size(stencil)
+    locations = []
+    for i in 1:br-sr+1
+        for j in 1:bc-sc+1
+            if is_monster(stencil, bitmap, i, j)
+                @info "Found monster: bitmap=$(hash(bitmap)) i=$i j=$j"
+                push!(locations, (i,j))
+            end
+        end
+    end
+    return locations
+end
+
+function mark_monsters!(stencil, bitmap, locations)
+    for loc in locations
+        # @info "marking $loc"
+        for row in 1:size(stencil, 1)
+            for col in 1:size(stencil, 2)
+                if stencil[row, col] == 1
+                    # @info "marking $loc: $row $col"
+                    bitmap[loc[1] + row - 1, loc[2] + col - 1] = 2
+                end
+            end
+        end
+    end
 end
 
 function part1()
@@ -232,10 +306,39 @@ function part1()
     return prod([k for (k,v) in result if length(v) == 2])
 end
 
+function orient_and_find_monsters(stencil, bitmap)
+    for bm in (bitmap, flip_matrix(bitmap, :horizontal), flip_matrix(bitmap, :vertical))
+        for rotation in 0:3
+            bm2 = rotate_matrix(bm, rotation)
+            locations = find_monsters(stencil, bm2)
+            if length(locations) > 0
+                @info "Found monster in bitmap=$(hash(bm2))"
+                return bm2, locations
+            end
+        end
+    end
+    error("can't find any monsters :-(")
+end
+
 # NOTE: Not finished yet... will come back to this later.
 function part2()
     tiles = read_data("day20.txt")
     mappings = match_all(tiles)
-    puzzle_ids, puzzle_picture = assemble(tiles, mappings)
-    # return make_bitmap(puzzle_picture)
+    @info "mappings" mappings
+    puzzle_ids, puzzle_picture, tiles = assemble(tiles, mappings)
+    
+    bitmap = make_bitmap(puzzle_picture)
+    stencil = get_stencil()
+
+    bitmap, locations = orient_and_find_monsters(stencil, bitmap)
+
+    mark_monsters!(stencil, bitmap, locations)
+    return count(==(1), bitmap)
+
+    # return bitmap, cnt, sum(stencil)
+    # return sum(bitmap) - cnt * sum(stencil)
+end
+
+function Base.show(io::IO, t::Tile)
+    print(io, "$(t.id),$(t.orientation),$(t.rotation)")
 end
