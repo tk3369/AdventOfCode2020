@@ -1,5 +1,5 @@
 """
-A quick and dirty moduel for retrieving privarte leaderboard data from AoC.
+A quick and dirty module for retrieving private leaderboard data from AoC.
 """
 module Leaderboard
 
