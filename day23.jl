@@ -4,7 +4,7 @@ function play!(L, n)
     
     highest = maximum(L)
     lowest = minimum(L)
-    dct = build_dict(L)
+    lookup = build_lookup_table(L)
 
     for i in 1:n
         curr = current(L)
@@ -24,46 +24,46 @@ function play!(L, n)
             if dst < lowest
                 dst = highest
             end
-            if dst in [v1, v2, v3]
+            if dst == v1 || dst == v2 || dst == v3
                 dst -= 1
             end
         end
 
         # Jump to the destination node
-        jump!(L, dct[dst])
+        jump!(L, lookup[dst])
 
         # Re-insert the picked up cups
-        insert_cup!(L, v1, dct)
-        insert_cup!(L, v2, dct)
-        insert_cup!(L, v3, dct)
+        insert_cup!(L, v1, lookup)
+        insert_cup!(L, v2, lookup)
+        insert_cup!(L, v3, lookup)
 
         # Jump back to the current cup
-        jump!(L, dct[curr.data])
+        jump!(L, lookup[curr.data])
 
         # Move to the next cup and repeat
         forward!(L)
     end
 
     # Jump to cup #1 and return the current list
-    jump!(L, dct[1])
+    jump!(L, lookup[1])
     return L
 end
 
 # Build a Dict for fast node lookup
-function build_dict(L::CircularList.List{T}) where T
-    dct = Dict{T, CircularList.Node{T}}()
+function build_lookup_table(L::CircularList.List{T}) where T
+    lookup = Union{Nothing,CircularList.Node}[nothing for _ in 1:length(L)]
     for i in 1:length(L)
         node = current(L)
-        dct[node.data] = node
+        lookup[node.data] = node
         forward!(L)
     end
-    return dct
+    return lookup
 end
 
-# Insert a cup to the list and update the dctionary lookup
-function insert_cup!(L, value, dct)
+# Insert a cup to the list and update the lookupionary lookup
+function insert_cup!(L, value, lookup)
     insert!(L, value)
-    dct[value] = current(L)
+    lookup[value] = current(L)
     return nothing
 end
 
@@ -100,5 +100,6 @@ julia> @time part2()
 ┌ Info: Completed game
 │   v1 = 760147
 └   v2 = 673265
- 35.447427 seconds (202.37 M allocations: 8.511 GiB, 40.76% gc time)
+ 21.279870 seconds (53.09 M allocations: 3.570 GiB, 38.12% gc time)
+511780369955
 =#
