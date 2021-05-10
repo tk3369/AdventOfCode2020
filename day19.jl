@@ -76,7 +76,7 @@ end
 function part2b()
     rules, messages = read_data(filename())
     rules["(8)"] = "((42)+)"
-    rules["(11)"] = "((42)(?R)?(31))"
+    rules["(11)"] = "((42)(?1)?(31))"
     re = make_regex(rules)
     return count(m -> !isnothing(match(re, m)), messages)
 end
